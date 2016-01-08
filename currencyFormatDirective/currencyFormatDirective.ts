@@ -5,7 +5,11 @@
     link: ($scope: ng.IScope, $element: ng.IRootElementService, $attrs: ng.IAttributes,ngModelCtrl: ng.INgModelController) => {
       // Removes formatting
       let unformat = (v) => {
+        // Split the value into the integers and decimals. We're only interested in the
+        // integer part.
         let parts = String(v).split($locale.NUMBER_FORMATS.DECIMAL_SEP);
+
+        // Push all numeric characters into the variable _s_.
         let s = '';
         for (var i = 0; i < parts[0].length; i += 1) {
           let c = parts[0].charCodeAt(i);
@@ -19,6 +23,7 @@
 
       // Applies formatting
       let format = (v) => {
+        // Handles null, undefined etc.
         if (!v || v.length < 1) {
           return v;
         }
