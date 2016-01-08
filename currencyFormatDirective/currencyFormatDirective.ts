@@ -42,10 +42,10 @@
             
       // This runs when the model gets updated on the scope directly and keeps our view in sync
       ngModelCtrl.$render = function () {
-        $element.val(format(ngModelCtrl.$viewValue))
+        $element.val(format(ngModelCtrl.$viewValue));
       };
 
-      $element.bind('change', listener)
+      $element.bind('change', listener);
       $element.bind('keydown', function (event) {
         var key = event.keyCode
         // If the keys include the CTRL, SHIFT, ALT, or META keys, or the arrow keys, do nothing.
