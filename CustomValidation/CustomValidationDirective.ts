@@ -1,4 +1,4 @@
-﻿class ModelValidatior {
+﻿class ModelValidator {
   private rules_: ((modelValue, extremeValue) => boolean)[];
   private scope_: ng.IScope;
   private ctrl_: ng.INgModelController;
@@ -100,13 +100,13 @@
 }
 
 export function minDirective($filter): ng.IDirective {
-  var validator = new ModelValidatior('min', (v) => String(v).replace(/[^0-9]/g, ''));
+  var validator = new ModelValidator('min', (v) => String(v).replace(/[^0-9]/g, ''));
   validator.addRule((modelValue, extremeValue) => modelValue >= extremeValue);
   return validator.toDirective();
 }
 
 export function maxDirective($filter): ng.IDirective {
-  var validator = new ModelValidatior('max', (v) => String(v).replace(/[^0-9]/g, ''));
+  var validator = new ModelValidator('max', (v) => String(v).replace(/[^0-9]/g, ''));
   validator.addRule((modelValue, extremeValue) => modelValue <= extremeValue);
   return validator.toDirective();
 }

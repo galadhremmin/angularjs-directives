@@ -1,21 +1,21 @@
 define(["require", "exports"], function (require, exports) {
-    var ModelValidatior = (function () {
-        function ModelValidatior(validatorName_, filter_) {
+    var ModelValidator = (function () {
+        function ModelValidator(validatorName_, filter_) {
             if (filter_ === void 0) { filter_ = null; }
             this.validatorName_ = validatorName_;
             this.filter_ = filter_;
             this.rules_ = [];
         }
-        ModelValidatior.prototype.watch = function () {
+        ModelValidator.prototype.watch = function () {
             var _this = this;
             this.scope_.$watch(function () { return _this.attr_[_this.attributeName_]; }, function () {
                 _this.ctrl_.$setViewValue(_this.ctrl_.$viewValue);
             });
         };
-        ModelValidatior.prototype.addRule = function (expression) {
+        ModelValidator.prototype.addRule = function (expression) {
             this.rules_.push(expression);
         };
-        ModelValidatior.prototype.validate = function (modelValue) {
+        ModelValidator.prototype.validate = function (modelValue) {
             var extremeValue = this.scope_.$eval(this.attr_[this.attributeName_]);
             if (this.isEmpty(modelValue)) {
                 return true;
@@ -28,10 +28,10 @@ define(["require", "exports"], function (require, exports) {
             }
             return true;
         };
-        ModelValidatior.prototype.isEmpty = function (value) {
+        ModelValidator.prototype.isEmpty = function (value) {
             return value === undefined || value === null || /^\s*$/.test(value);
         };
-        ModelValidatior.prototype.link = function (scope, elem, attr, ctrl) {
+        ModelValidator.prototype.link = function (scope, elem, attr, ctrl) {
             var _this = this;
             this.scope_ = scope;
             this.attr_ = attr;
@@ -52,7 +52,7 @@ define(["require", "exports"], function (require, exports) {
             ctrl.$parsers.push(validator);
             ctrl.$formatters.push(validator);
         };
-        ModelValidatior.prototype.toDirective = function () {
+        ModelValidator.prototype.toDirective = function () {
             var this_ = this;
             return {
                 restrict: 'A',
@@ -65,16 +65,16 @@ define(["require", "exports"], function (require, exports) {
                 }
             };
         };
-        return ModelValidatior;
+        return ModelValidator;
     })();
     function minDirective($filter) {
-        var validator = new ModelValidatior('min', function (v) { return String(v).replace(/[^0-9]/g, ''); });
+        var validator = new ModelValidator('min', function (v) { return String(v).replace(/[^0-9]/g, ''); });
         validator.addRule(function (modelValue, extremeValue) { return modelValue >= extremeValue; });
         return validator.toDirective();
     }
     exports.minDirective = minDirective;
     function maxDirective($filter) {
-        var validator = new ModelValidatior('max', function (v) { return String(v).replace(/[^0-9]/g, ''); });
+        var validator = new ModelValidator('max', function (v) { return String(v).replace(/[^0-9]/g, ''); });
         validator.addRule(function (modelValue, extremeValue) { return modelValue <= extremeValue; });
         return validator.toDirective();
     }
