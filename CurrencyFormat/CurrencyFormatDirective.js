@@ -25,24 +25,37 @@ define(["require", "exports"], function (require, exports) {
                     return $filter('number')(v);
                 };
                 var listener = function () {
-                    var value = unformat($element.val() || '0');
-                    $element.val(format(value));
+                    var origV = $element.val() || '0';
+                    var v = format(unformat(origV));
+                    var elem = $element.get(0);
+                    var ratio = origV.length < 1 ? 0 : elem.selectionStart / origV.length;
+                    if (v === undefined || v === null) {
+                        return;
+                    }
+                    if (origV !== v) {
+                        $element.val(v);
+                        if (ratio > 0) {
+                            var pos = Math.max(Math.ceil(ratio * v.length), 0);
+                            elem.setSelectionRange(pos, pos);
+                        }
+                    }
                 };
                 ngModelCtrl.$parsers.push(function (viewValue) {
                     return unformat(viewValue);
                 });
                 ngModelCtrl.$render = function () {
-                    $element.val(format(ngModelCtrl.$viewValue));
+                    var v = format(ngModelCtrl.$viewValue);
+                    $element.val(v);
                 };
-                $element.bind('change', listener);
-                $element.bind('keydown', function (event) {
+                $element.on('change', listener);
+                $element.on('keydown', function (event) {
                     var key = event.keyCode;
                     if (key == 91 || (15 < key && key < 19) || (37 <= key && key <= 40) || event.metaKey || event.ctrlKey) {
                         return;
                     }
                     $browser.defer(listener);
                 });
-                $element.bind('paste cut', function () {
+                $element.on('paste cut', function () {
                     $browser.defer(listener);
                 });
                 $element.prop('pattern', '^[0-9\\s]*$');

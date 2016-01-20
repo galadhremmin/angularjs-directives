@@ -2,7 +2,7 @@
   return {
     restrict: 'A',
     require: 'ngModel',
-    link: ($scope: ng.IScope, $element: ng.IRootElementService, $attrs: ng.IAttributes,ngModelCtrl: ng.INgModelController) => {
+    link: ($scope: ng.IScope, $element: ng.IAugmentedJQuery, $attrs: ng.IAttributes, ngModelCtrl: ng.INgModelController) => {
       // Removes formatting
       let unformat = (v) => {
         let parts = String(v).split($locale.NUMBER_FORMATS.DECIMAL_SEP);
@@ -31,8 +31,32 @@
       };
 
       let listener = function () {
-        let value = unformat($element.val() || '0');
-        $element.val(format(value));
+        // Retrieve the original value, or default to zero if none is present.
+        let origV = $element.val() || '0';
+
+        // Examine where the caret is currently positioned and calculate the carets position in 
+        // a percentage based on the length of the string. This is a hacky solution to figure out
+        // where to position the caret after the string has been reformatted (and thus, in all likelihood
+        // lengthened).
+        let v = format(unformat(origV));
+        let elem = <HTMLInputElement> $element.get(0);
+        let ratio = origV.length < 1 ? 0 : elem.selectionStart / origV.length; // the 0-check to avoid NaN by division by zero
+        if (v === undefined || v === null) { // Ignore undefined / null model values
+          return;
+        }
+
+        // Only change the element's current value if it doesn't match the formatted value.
+        if (origV !== v) {
+          $element.val(v);
+
+          if (ratio > 0) {
+            // Calculate where to position the caret based on the ratio calculated above.
+            let pos = Math.max(Math.ceil(ratio * v.length), 0);
+            // The _setSelectionRange_ is a bit special. The second argument isn't the length of the 
+            // selection, but rather the end position. This is why _pos_ is passed twice.
+            elem.setSelectionRange(pos, pos);
+          }
+        }
       };
             
       // This runs when we update the text field
@@ -42,11 +66,12 @@
             
       // This runs when the model gets updated on the scope directly and keeps our view in sync
       ngModelCtrl.$render = function () {
-        $element.val(format(ngModelCtrl.$viewValue))
+        let v = format(ngModelCtrl.$viewValue);
+        $element.val(v);
       };
 
-      $element.bind('change', listener);
-      $element.bind('keydown', function (event) {
+      $element.on('change', listener);
+      $element.on('keydown', function (event) {
         var key = event.keyCode
         // If the keys include the CTRL, SHIFT, ALT, or META keys, or the arrow keys, do nothing.
         // This lets us support copy and paste too
@@ -57,7 +82,7 @@
         $browser.defer(listener); // Have to do this or changes don't get picked up properly
       });
       
-      $element.bind('paste cut', function () {
+      $element.on('paste cut', function () {
         $browser.defer(listener);
       });
 
