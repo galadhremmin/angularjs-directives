@@ -45,8 +45,6 @@ define(["require", "exports"], function (require, exports) {
                 }
                 var result = _this.validate(v);
                 ctrl.$setValidity(_this.validatorName_, result);
-                var formGroup = elem.parent('.form-group');
-                formGroup[result ? 'removeClass' : 'addClass'].call(formGroup, 'has-error');
                 return result ? modelValue : undefined;
             };
             ctrl.$parsers.push(validator);
@@ -67,14 +65,32 @@ define(["require", "exports"], function (require, exports) {
         };
         return ModelValidator;
     })();
+    function anyToNumberConverter(v) {
+        return parseInt(String(v).replace(/[^0-9]/g, ''));
+    }
+    function bootstrapValidationDirective() {
+        return {
+            restrict: 'A',
+            require: 'ngModel',
+            link: function (scope, elem, attr, ctrl) {
+                var groupElem = elem.parent('.form-group');
+                scope.$watch(function () {
+                    return ctrl.$invalid;
+                }, function (isValid) {
+                    groupElem.toggleClass('has-error', isValid);
+                });
+            }
+        };
+    }
+    exports.bootstrapValidationDirective = bootstrapValidationDirective;
     function minDirective($filter) {
-        var validator = new ModelValidator('min', function (v) { return String(v).replace(/[^0-9]/g, ''); });
+        var validator = new ModelValidator('min', anyToNumberConverter);
         validator.addRule(function (modelValue, extremeValue) { return modelValue >= extremeValue; });
         return validator.toDirective();
     }
     exports.minDirective = minDirective;
     function maxDirective($filter) {
-        var validator = new ModelValidator('max', function (v) { return String(v).replace(/[^0-9]/g, ''); });
+        var validator = new ModelValidator('max', anyToNumberConverter);
         validator.addRule(function (modelValue, extremeValue) { return modelValue <= extremeValue; });
         return validator.toDirective();
     }

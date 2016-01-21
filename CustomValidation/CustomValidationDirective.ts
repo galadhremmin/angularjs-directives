@@ -68,11 +68,7 @@
       }
 
       let result = this.validate(v);
-
       ctrl.$setValidity(this.validatorName_, result);
-
-      let formGroup = elem.parent('.form-group');
-      formGroup[result ? 'removeClass' : 'addClass'].call(formGroup, 'has-error');
 
       return result ? modelValue : undefined;
     };
@@ -99,14 +95,36 @@
   }
 }
 
+function anyToNumberConverter(v): number {
+  return parseInt(String(v).replace(/[^0-9]/g, ''));
+}
+
+/**
+  * Applies Bootstrap's _has-error_ class to all form groups which contain an invalid input field.
+  */
+export function bootstrapValidationDirective(): ng.IDirective {
+  return {
+    restrict: 'A',
+    require: 'ngModel',
+    link: (scope, elem, attr, ctrl: ng.INgModelController) => {
+      let groupElem = elem.parent('.form-group');
+      scope.$watch(() => {
+        return ctrl.$invalid;
+      }, function (isValid) {
+        groupElem.toggleClass('has-error', isValid);
+      });
+    }
+  };
+}
+
 export function minDirective($filter): ng.IDirective {
-  var validator = new ModelValidator('min', (v) => String(v).replace(/[^0-9]/g, ''));
+  var validator = new ModelValidator('min', anyToNumberConverter);
   validator.addRule((modelValue, extremeValue) => modelValue >= extremeValue);
   return validator.toDirective();
 }
 
 export function maxDirective($filter): ng.IDirective {
-  var validator = new ModelValidator('max', (v) => String(v).replace(/[^0-9]/g, ''));
+  var validator = new ModelValidator('max', anyToNumberConverter);
   validator.addRule((modelValue, extremeValue) => modelValue <= extremeValue);
   return validator.toDirective();
 }
