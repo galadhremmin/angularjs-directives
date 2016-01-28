@@ -4,9 +4,8 @@
   private ctrl_: ng.INgModelController;
   private attr_: ng.IAttributes;
   private elem_: ng.IAugmentedJQuery;
-  private attributeName_: string;
 
-  constructor(private validatorName_: string, private filter_: (value: any) => any = null) {
+  constructor(private validatorName_: string, private valueConverter_: (value: any) => any = null, private attributeName_: string = undefined) {
     this.rules_ = [];
   }
 
@@ -54,17 +53,19 @@
   }
 
   private link(scope, elem, attr, ctrl): void {
+    var this_ = this;
+
     this.scope_ = scope;
     this.attr_ = attr;
-    this.ctrl_ = ctrl;
     this.elem_ = elem;
+    this.ctrl_ = ctrl;
 
     this.watch();
 
     var validator = (modelValue) => {
       let v = modelValue;
-      if (v !== undefined && v !== null && this.filter_) {
-        v = this.filter_.call(this, modelValue);
+      if (v !== undefined && v !== null && this.valueConverter_) {
+        v = this.valueConverter_.call(this, modelValue);
       }
 
       let result = this.validate(v);
@@ -73,22 +74,35 @@
       return result ? modelValue : undefined;
     };
 
-    ctrl.$parsers.push(validator);
-    ctrl.$formatters.push(validator);
+    ctrl.$parsers.push(function () {
+      return validator.apply(this_, arguments);
+    });
+
+    ctrl.$formatters.push(function () {
+      return validator.apply(this_, arguments);
+    });
+  }
+
+  public clone(): ModelValidator {
+    let validator = new ModelValidator(this.validatorName_, this.valueConverter_, this.attributeName_);
+    validator.rules_ = this.rules_;
+
+    return validator;
   }
 
   public toDirective(): ng.IDirective {
-    var this_ = this;
+    var _this = this;
     return {
       restrict: 'A',
       require: 'ngModel',
       compile: function () {
         // Save the name of the property, as it will be watched for changes
-        this_.attributeName_ = this.name;
+        _this.attributeName_ = this.name;
 
         // Return the linking method
         return function () {
-          this_.link.apply(this_, arguments);
+          let validator = _this.clone();
+          validator.link.apply(validator, arguments);
         };
       }
     };
@@ -109,7 +123,7 @@ export function bootstrapValidationDirective(): ng.IDirective {
     link: (scope, elem, attr, ctrl: ng.INgModelController) => {
       let groupElem = elem.parent('.form-group');
       scope.$watch(() => {
-        return ctrl.$invalid;
+        return !elem.is(':disabled') && ctrl.$invalid;
       }, function (isValid) {
         groupElem.toggleClass('has-error', isValid);
       });

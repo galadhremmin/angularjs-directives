@@ -1,9 +1,11 @@
 define(["require", "exports"], function (require, exports) {
     var ModelValidator = (function () {
-        function ModelValidator(validatorName_, filter_) {
-            if (filter_ === void 0) { filter_ = null; }
+        function ModelValidator(validatorName_, valueConverter_, attributeName_) {
+            if (valueConverter_ === void 0) { valueConverter_ = null; }
+            if (attributeName_ === void 0) { attributeName_ = undefined; }
             this.validatorName_ = validatorName_;
-            this.filter_ = filter_;
+            this.valueConverter_ = valueConverter_;
+            this.attributeName_ = attributeName_;
             this.rules_ = [];
         }
         ModelValidator.prototype.watch = function () {
@@ -33,32 +35,43 @@ define(["require", "exports"], function (require, exports) {
         };
         ModelValidator.prototype.link = function (scope, elem, attr, ctrl) {
             var _this = this;
+            var this_ = this;
             this.scope_ = scope;
             this.attr_ = attr;
-            this.ctrl_ = ctrl;
             this.elem_ = elem;
+            this.ctrl_ = ctrl;
             this.watch();
             var validator = function (modelValue) {
                 var v = modelValue;
-                if (v !== undefined && v !== null && _this.filter_) {
-                    v = _this.filter_.call(_this, modelValue);
+                if (v !== undefined && v !== null && _this.valueConverter_) {
+                    v = _this.valueConverter_.call(_this, modelValue);
                 }
                 var result = _this.validate(v);
                 ctrl.$setValidity(_this.validatorName_, result);
                 return result ? modelValue : undefined;
             };
-            ctrl.$parsers.push(validator);
-            ctrl.$formatters.push(validator);
+            ctrl.$parsers.push(function () {
+                return validator.apply(this_, arguments);
+            });
+            ctrl.$formatters.push(function () {
+                return validator.apply(this_, arguments);
+            });
+        };
+        ModelValidator.prototype.clone = function () {
+            var validator = new ModelValidator(this.validatorName_, this.valueConverter_, this.attributeName_);
+            validator.rules_ = this.rules_;
+            return validator;
         };
         ModelValidator.prototype.toDirective = function () {
-            var this_ = this;
+            var _this = this;
             return {
                 restrict: 'A',
                 require: 'ngModel',
                 compile: function () {
-                    this_.attributeName_ = this.name;
+                    _this.attributeName_ = this.name;
                     return function () {
-                        this_.link.apply(this_, arguments);
+                        var validator = _this.clone();
+                        validator.link.apply(validator, arguments);
                     };
                 }
             };
@@ -75,7 +88,7 @@ define(["require", "exports"], function (require, exports) {
             link: function (scope, elem, attr, ctrl) {
                 var groupElem = elem.parent('.form-group');
                 scope.$watch(function () {
-                    return ctrl.$invalid;
+                    return !elem.is(':disabled') && ctrl.$invalid;
                 }, function (isValid) {
                     groupElem.toggleClass('has-error', isValid);
                 });
