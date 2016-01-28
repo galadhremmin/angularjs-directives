@@ -5,6 +5,10 @@
     link: ($scope: ng.IScope, $element: ng.IAugmentedJQuery, $attrs: ng.IAttributes, ngModelCtrl: ng.INgModelController) => {
       // Removes formatting
       let unformat = (v) => {
+        if (ngModelCtrl.$isEmpty(v)) {
+          return undefined;
+        }
+
         let parts = String(v).split($locale.NUMBER_FORMATS.DECIMAL_SEP);
         let s = '';
         for (var i = 0; i < parts[0].length; i += 1) {
@@ -19,8 +23,12 @@
 
       // Applies formatting
       let format = (v) => {
+        if (ngModelCtrl.$isEmpty(v)) {
+          return undefined;
+        }
+
         if (!v || v.length < 1) {
-          return v;
+          return '0';
         }
 
         if (typeof v === 'number') {
@@ -67,7 +75,9 @@
       // This runs when the model gets updated on the scope directly and keeps our view in sync
       ngModelCtrl.$render = function () {
         let v = format(ngModelCtrl.$viewValue);
-        $element.val(v);
+        if (v !== undefined) {
+          $element.val(v);
+        }
       };
 
       $element.on('change', listener);

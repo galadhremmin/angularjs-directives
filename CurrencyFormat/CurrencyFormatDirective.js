@@ -5,6 +5,9 @@ define(["require", "exports"], function (require, exports) {
             require: 'ngModel',
             link: function ($scope, $element, $attrs, ngModelCtrl) {
                 var unformat = function (v) {
+                    if (ngModelCtrl.$isEmpty(v)) {
+                        return undefined;
+                    }
                     var parts = String(v).split($locale.NUMBER_FORMATS.DECIMAL_SEP);
                     var s = '';
                     for (var i = 0; i < parts[0].length; i += 1) {
@@ -16,8 +19,11 @@ define(["require", "exports"], function (require, exports) {
                     return parseInt(s || '0');
                 };
                 var format = function (v) {
+                    if (ngModelCtrl.$isEmpty(v)) {
+                        return undefined;
+                    }
                     if (!v || v.length < 1) {
-                        return v;
+                        return '0';
                     }
                     if (typeof v === 'number') {
                         v = String(v);
@@ -45,7 +51,9 @@ define(["require", "exports"], function (require, exports) {
                 });
                 ngModelCtrl.$render = function () {
                     var v = format(ngModelCtrl.$viewValue);
-                    $element.val(v);
+                    if (v !== undefined) {
+                        $element.val(v);
+                    }
                 };
                 $element.on('change', listener);
                 $element.on('keydown', function (event) {
