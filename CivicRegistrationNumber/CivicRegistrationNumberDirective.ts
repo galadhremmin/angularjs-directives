@@ -1,4 +1,4 @@
-﻿function currencyFormatDirective($filter: ng.IFilterService, $browser: ng.IBrowserService, $locale: ng.ILocaleService) {
+﻿function currencyFormatDirective($filter: ng.IFilterService, $browser: any, $locale: ng.ILocaleService) {
   return {
     restrict: 'A',
     require: 'ngModel',
@@ -28,8 +28,10 @@
         $element.val(format(ngModelCtrl.$viewValue));
       };
 
-      $element.bind('change', listener);
-      $element.bind('keydown', function (event) {
+      ngModelCtrl.$validators['CivicRegistrationNumber'] = (v) => new RegExp($element.prop('pattern')).test(v);
+
+      $element.on('change', listener);
+      $element.on('keydown', function (event) {
         var key = event.keyCode;
         // If the keys include the CTRL, SHIFT, ALT, or META keys, or the arrow keys, do nothing.
         // This lets us support copy and paste too
@@ -40,11 +42,12 @@
         $browser.defer(listener); // Have to do this or changes don't get picked up properly
       });
 
-      $element.bind('paste cut', function () {
+      $element.on('paste cut', function () {
         $browser.defer(listener);
       });
 
       $element.prop('placeholder', 'ÅÅMMDD-XXXX');
+      $element.prop('pattern', '^[0-9]{6}\\-[0-9]{4}$');
     }
   };
 }

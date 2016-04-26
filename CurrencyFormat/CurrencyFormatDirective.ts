@@ -1,15 +1,36 @@
-﻿function currencyFormatDirective($filter: ng.IFilterService, $browser: ng.IBrowserService, $locale: ng.ILocaleService) {
+﻿function currencyFormatDirective($filter: ng.IFilterService, $browser: any, $locale: ng.ILocaleService) {
+  const CURRENCY_SYMBOL = ' kr';
+
   return {
     restrict: 'A',
     require: 'ngModel',
     link: ($scope: ng.IScope, $element: ng.IAugmentedJQuery, $attrs: ng.IAttributes, ngModelCtrl: ng.INgModelController) => {
+
+      // Removes currency format
+      var applySymbol = (v: string, add: boolean) => {
+        if (CURRENCY_SYMBOL === null || ngModelCtrl.$isEmpty(v)) {
+          return v;
+        }
+
+        if (!add) {
+          if (v.substr(-CURRENCY_SYMBOL.length) === CURRENCY_SYMBOL) {
+            v = v.substr(0, v.length - CURRENCY_SYMBOL.length);
+          }
+        } else {
+          v = v + CURRENCY_SYMBOL;
+        }
+
+        return v;
+      };
+
       // Removes formatting
-      let unformat = (v) => {
+      var unformat = (v) => {
         if (ngModelCtrl.$isEmpty(v)) {
           return undefined;
         }
 
-        let parts = String(v).split($locale.NUMBER_FORMATS.DECIMAL_SEP);
+        var vs = String(v);
+        let parts = vs.split($locale.NUMBER_FORMATS.DECIMAL_SEP);
         let s = '';
         for (var i = 0; i < parts[0].length; i += 1) {
           let c = parts[0].charCodeAt(i);
@@ -22,7 +43,7 @@
       };
 
       // Applies formatting
-      let format = (v) => {
+      var format = (v) => {
         if (ngModelCtrl.$isEmpty(v)) {
           return undefined;
         }
@@ -38,7 +59,7 @@
         return $filter('number')(v);
       };
 
-      let listener = function () {
+      var listener = function () {
         // Retrieve the original value, or default to zero if none is present.
         let origV = $element.val() || '0';
 
@@ -76,16 +97,24 @@
       ngModelCtrl.$render = function () {
         let v = format(ngModelCtrl.$viewValue);
         if (v !== undefined) {
-          $element.val(v);
+          $element.val(applySymbol(v, true));
         }
       };
 
+      $element.on('blur', function () {
+        $(this).val(applySymbol($(this).val(), true));
+      });
+
+      $element.on('focus', function () {
+        $(this).val(applySymbol($(this).val(), false));
+      });
+      
       $element.on('change', listener);
       $element.on('keydown', function (event) {
         var key = event.keyCode
         // If the keys include the CTRL, SHIFT, ALT, or META keys, or the arrow keys, do nothing.
         // This lets us support copy and paste too
-        if (key == 91 || (15 < key && key < 19) || (37 <= key && key <= 40) || event.metaKey || event.ctrlKey) {
+        if (key == 9 || key == 91 || (15 < key && key < 19) || (37 <= key && key <= 40) || event.metaKey || event.ctrlKey) {
           return;
         }
 
@@ -96,7 +125,7 @@
         $browser.defer(listener);
       });
 
-      $element.prop('pattern', '^[0-9\\s]*$');
+      $element.prop('pattern', '^[0-9\\s]*(\\skr)?$');
     }
   };
 }

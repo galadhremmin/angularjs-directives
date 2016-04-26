@@ -13,10 +13,11 @@
     * Creates a watcher for the attribute triggering the directive.
     */
   public watch(): void {
-    this.scope_.$watch(() => this.attr_[this.attributeName_], () => {
+    this.scope_.$watch(this.attr_[this.attributeName_], () => {
       // Coerce the validation to trigger by refreshing the view value.
-      this.ctrl_.$setViewValue(this.ctrl_.$viewValue);
-    });
+      //this.ctrl_.$setViewValue(this.ctrl_.$viewValue);
+      this.ctrl_.$validate();
+    }, true);
   }
 
   /**
@@ -52,7 +53,7 @@
     return value === undefined || value === null || /^\s*$/.test(value);
   }
 
-  private link(scope, elem, attr, ctrl): void {
+  private link(scope, elem, attr, ctrl: ng.INgModelController): void {
     var this_ = this;
 
     this.scope_ = scope;
@@ -73,14 +74,10 @@
 
       return result ? modelValue : undefined;
     };
-
-    ctrl.$parsers.push(function () {
+    
+    ctrl.$validators[this.validatorName_] = function () {
       return validator.apply(this_, arguments);
-    });
-
-    ctrl.$formatters.push(function () {
-      return validator.apply(this_, arguments);
-    });
+    };
   }
 
   public clone(): ModelValidator {
@@ -141,4 +138,74 @@ export function maxDirective($filter): ng.IDirective {
   var validator = new ModelValidator('max', anyToNumberConverter);
   validator.addRule((modelValue, extremeValue) => modelValue <= extremeValue);
   return validator.toDirective();
+}
+
+export function maxMinIndicatorDirective(): ng.IDirective {
+  return {
+    restrict: 'A',
+    require: 'ngModel',
+    link: ($scope: ng.IScope, elem: ng.IAugmentedJQuery, attrs: ng.IAttributes, ctrl: ng.INgModelController) => {
+
+      /**
+       * Selects an appropriate font colour depending on the intensity of the green color component.
+       * The weaker it is, the more red it will appear.
+       * @param background
+       */
+      function calculateTextColor(background: number[]): string {
+        return background[1] > 100 ? 'inherit' : 'white';
+      }
+
+      /**
+       * Interpolates between red, yellow and green depending on the value percentage. 
+       * @param percentage
+       */
+      function calculateBackgroundColor(percentage: number): number[] {
+        let p = 100 - percentage;
+        let colors = [
+          Math.floor((p > 50 ? 1 - 2 * (p - 50) / 100.0 : 1.0) * 255),
+          Math.floor((p > 50 ? 1.0 : 2 * p / 100.0) * 255),
+          0
+        ];
+
+        return colors;
+      }
+
+      /**
+       * Applies CSS depending on the current input value.
+       */
+      function update(): void {
+        let percentage = Math.round((parseInt(elem.val() || '0') - min) / max * 100);
+        var backgroundColor = calculateBackgroundColor(percentage);
+        let textColor = calculateTextColor(backgroundColor);
+        let color = 'rgb(' + backgroundColor.join(',') + ')'; // 0 % = #83b685
+
+        elem.css({
+          background: 'linear-gradient(' + color + ', ' + color + ') no-repeat left top',
+          backgroundSize: percentage + '% 100%',
+          color: textColor
+        });
+      }
+
+      var max = 0;
+      var min = 0;
+
+      max = parseInt(attrs['max']);
+      min = parseInt(attrs['min']);
+      
+      attrs.$observe('min', (v: string) => {
+        min = parseInt(v);
+        update();
+      });
+
+      attrs.$observe('max', (v: string) => {
+        max = parseInt(v);
+        update();
+      });
+
+      ctrl.$viewChangeListeners.push(() => {
+        update();
+      });
+      
+    }
+  };
 }
